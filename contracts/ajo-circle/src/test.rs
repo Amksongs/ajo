@@ -608,3 +608,20 @@ fn creator_who_left_cannot_cancel_the_circle() {
     client.leave_circle(&id, &b);
     assert!(client.get_circle(&id).members.is_empty());
 }
+
+#[test]
+fn rejects_contribution_whose_full_pot_overflows() {
+    let env = Env::default();
+    let client = setup(&env);
+    let (token, _, _) = create_token(&env);
+    let creator = Address::generate(&env);
+
+    // i128::MAX / 2 with three members would overflow disburse's pot (#243).
+    assert_eq!(
+        client.try_create_circle(&creator, &token, &(i128::MAX / 2), &3, &WEEK),
+        Err(Ok(ContractError::InvalidParams))
+    );
+    assert!(client
+        .try_create_circle(&creator, &token, &(i128::MAX / 3), &3, &WEEK)
+        .is_ok());
+}
