@@ -40,3 +40,12 @@ anything beyond the key you explicitly gave it on your own machine.
 `ajo config` prints the current contract id, RPC url, and network
 passphrase (defaults to testnet). Edit `~/.ajo/config.json` directly to
 point at a different deployment.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success |
+| `1` | Any non-contract failure (bad input, network, config) |
+| `2` | The contract rejected the call with an unrecognised error |
+| `11`–`20` | The contract rejected the call: `10 + ContractErrorCode` (e.g. `18` = `CycleNotReady`), with a `hint:` line on stderr |
