@@ -22,6 +22,11 @@ export enum CircleStatus {
   Cancelled = 3,
 }
 
+/** Events fetched per `getEvents` page in `discoverCircleIds`. */
+const DISCOVERY_PAGE_SIZE = 100;
+/** Upper bound on pages walked per discovery scan, so a busy window can't loop forever. */
+const DISCOVERY_MAX_PAGES = 50;
+
 export interface Circle {
   id: bigint;
   creator: string;
@@ -212,20 +217,17 @@ export class AjoClient {
     const latest = await this.server.getLatestLedger();
     const startLedger = Math.max(latest.sequence - lookbackLedgers, 1);
 
-    const fetchEvents = (from: number) =>
-      this.server.getEvents({
-        startLedger: from,
-        filters: [
-          {
-            type: "contract",
-            contractIds: [this.contractId],
-            topics: [
-              [xdr.ScVal.scvSymbol("circle").toXDR("base64"), xdr.ScVal.scvSymbol("created").toXDR("base64")],
-            ],
-          },
+    const filters: rpc.Api.EventFilter[] = [
+      {
+        type: "contract",
+        contractIds: [this.contractId],
+        topics: [
+          [xdr.ScVal.scvSymbol("circle").toXDR("base64"), xdr.ScVal.scvSymbol("created").toXDR("base64")],
         ],
-        limit,
-      });
+      },
+    ];
+    const fetchEvents = (from: number) =>
+      this.server.getEvents({ startLedger: from, filters, limit: DISCOVERY_PAGE_SIZE });
 
     let res;
     try {
@@ -242,7 +244,20 @@ export class AjoClient {
       res = await fetchEvents(min);
     }
 
-    return res.events.map((e) => scValToNative(e.value) as bigint).reverse();
+    // getEvents pages forward (oldest first) from startLedger, so follow the
+    // cursor to the end of the window before picking the newest ids (#264).
+    const ids = res.events.map((e) => scValToNative(e.value) as bigint);
+    for (
+      let page = 1;
+      res.events.length === DISCOVERY_PAGE_SIZE && page < DISCOVERY_MAX_PAGES;
+      page++
+    ) {
+      res = await this.server.getEvents({ cursor: res.cursor, filters, limit: DISCOVERY_PAGE_SIZE });
+      ids.push(...res.events.map((e) => scValToNative(e.value) as bigint));
+    }
+
+    // Ids are assigned sequentially, so descending id == newest first.
+    return [...new Set(ids)].sort((a, b) => (a > b ? -1 : a < b ? 1 : 0)).slice(0, limit);
   }
 
   // ---- writes: build an unsigned, simulated-and-assembled tx for the caller to sign ----
