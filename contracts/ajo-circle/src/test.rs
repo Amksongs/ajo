@@ -625,3 +625,29 @@ fn rejects_contribution_whose_full_pot_overflows() {
         .try_create_circle(&creator, &token, &(i128::MAX / 3), &3, &WEEK)
         .is_ok());
 }
+
+/// #253 — the `#[contractevent]` types must keep the exact wire shape the old
+/// `Events::publish` calls produced (`(circle, <action>)` topics, circle id as
+/// a bare u64), or the SDK/CLI/frontend event decoders break.
+#[test]
+fn typed_events_keep_the_legacy_topic_and_data_shape() {
+    use soroban_sdk::testutils::Events as _;
+    use soroban_sdk::xdr::{ContractEventBody, ScSymbol, ScVal, StringM};
+
+    let env = Env::default();
+    let client = setup(&env);
+    let (token, _, _) = create_token(&env);
+    let creator = Address::generate(&env);
+
+    let id = client.create_circle(&creator, &token, &1_000, &3, &WEEK);
+
+    let events = env.events().all().filter_by_contract(&client.address);
+    let event = events
+        .events()
+        .last()
+        .expect("create_circle emits an event");
+    let ContractEventBody::V0(body) = &event.body;
+    let sym = |s: &str| ScVal::Symbol(ScSymbol(StringM::try_from(s).unwrap()));
+    assert_eq!(body.topics.as_slice(), &[sym("circle"), sym("created")]);
+    assert_eq!(body.data, ScVal::U64(id));
+}
