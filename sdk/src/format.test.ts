@@ -17,10 +17,20 @@ describe("formatXlm", () => {
 });
 
 describe("parseAmount (#67)", () => {
-  it("parses valid integer and decimal numbers", () => {
-    expect(parseAmount("100")).toBe(100);
-    expect(parseAmount("12.34")).toBe(12.34);
-    expect(parseAmount("0.5")).toBe(0.5);
+  it("parses valid integer and decimal amounts into bigint stroops", () => {
+    expect(parseAmount("100")).toBe(1_000_000_000n);
+    expect(parseAmount("12.34")).toBe(123_400_000n);
+    expect(parseAmount("0.5")).toBe(5_000_000n);
+    expect(parseAmount(" 1 ")).toBe(10_000_000n);
+  });
+
+  it("keeps full precision for large amounts with 7 decimals (#268)", () => {
+    // Number("90071992547.4099999") rounds to 90071992547.41.
+    expect(parseAmount("90071992547.4099999")).toBe(900_719_925_474_099_999n);
+  });
+
+  it("rejects more than 7 decimal places instead of truncating (#268)", () => {
+    expect(() => parseAmount("1.00000001")).toThrow("Invalid numeric amount");
   });
 
   it("throws on non-numeric strings instead of returning NaN", () => {

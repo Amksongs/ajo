@@ -11,19 +11,20 @@ export function formatXlm(stroops: bigint): string {
 }
 
 /**
- * Parse an amount string into a number, throwing on non-numeric or invalid strings (#67)
- * instead of silently returning NaN.
+ * Parse a user-entered XLM amount into stroops, throwing on non-numeric or
+ * invalid strings (#67) instead of silently returning NaN.
+ *
+ * Returns `bigint` stroops like every other amount path in the SDK: a JS
+ * `number` can't hold 7 decimals on a large whole part exactly
+ * ("90071992547.4099999" became 90071992547.41), and money must not round (#268).
+ * More than 7 decimal places is rejected rather than silently truncated.
  */
-export function parseAmount(amount: string): number {
+export function parseAmount(amount: string): bigint {
   const trimmed = amount.trim();
-  if (!trimmed || !/^\d+(\.\d+)?$/.test(trimmed)) {
+  if (!/^\d+(\.\d{1,7})?$/.test(trimmed)) {
     throw new Error(`Invalid numeric amount: "${amount}"`);
   }
-  const parsed = Number(trimmed);
-  if (!Number.isFinite(parsed) || Number.isNaN(parsed)) {
-    throw new Error(`Invalid numeric amount: "${amount}"`);
-  }
-  return parsed;
+  return xlmToStroops(trimmed);
 }
 
 /** Parse a decimal XLM string into stroops, truncating past 7 decimal places. */
