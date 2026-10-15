@@ -199,3 +199,27 @@ describe("decodeReturnValue", () => {
     expect(decodeReturnValue(xdr.ScVal.scvVoid())).toBeUndefined();
   });
 });
+
+describe("discoverCircleIds (#264)", () => {
+  it("follows the cursor past the first page and returns the newest ids first", async () => {
+    const client = new AjoClient({
+      contractId: "CCL4M6UACHON7VFUBIXCLY5OGD2HLGAYV63W54MKFJ3UICWCHEBYBWTL",
+    });
+    vi.spyOn(client.server, "getLatestLedger").mockResolvedValue({ sequence: 20_000 } as never);
+
+    // 150 circles created in the window, served oldest-first in pages of 100.
+    const event = (id: number) => ({ value: nativeToScVal(BigInt(id), { type: "u64" }) });
+    const all = Array.from({ length: 150 }, (_, i) => event(i + 1));
+    const getEvents = vi
+      .spyOn(client.server, "getEvents")
+      .mockResolvedValueOnce({ events: all.slice(0, 100), cursor: "c1" } as never)
+      .mockResolvedValueOnce({ events: all.slice(100), cursor: "c2" } as never);
+
+    const ids = await client.discoverCircleIds(9_000, 3);
+
+    expect(ids).toEqual([150n, 149n, 148n]);
+    expect(getEvents).toHaveBeenCalledTimes(2);
+    expect(getEvents.mock.calls[1][0]).toMatchObject({ cursor: "c1" });
+    expect(getEvents.mock.calls[1][0]).not.toHaveProperty("startLedger");
+  });
+});
