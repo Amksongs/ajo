@@ -8,8 +8,9 @@ versioned releases yet — everything below is unreleased, testnet-only work.
 
 ### Added
 - `ajo-circle` Soroban contract: `create_circle`, `join_circle`,
-  `contribute`, `disburse`, plus read-only `get_circle`, `has_contributed`,
-  `missed_count`, and `total_circles`. 13 unit tests.
+  `leave_circle`, `cancel_circle`, `contribute`, `disburse`, plus read-only
+  `get_circle`, `has_contributed`, `missed_count`, and `total_circles`, with
+  unit tests in `contracts/ajo-circle/src/test.rs`.
 - Frontend: landing page (problem, how it works, why Stellar, FAQ), an
   `/about` page, and the app itself (`/circles`, `/circles/[id]`) — create,
   join, contribute, and trigger payout, all via a directly wallet-signed
