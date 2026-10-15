@@ -30,6 +30,8 @@ versioned releases yet — everything below is unreleased, testnet-only work.
   `Permissions-Policy`).
 
 ### Fixed
+- `sdk`: removed the `Circle.securityDeposit` field, which the contract
+  doesn't have and was always reported as `0n` (#260).
 - CI referenced `npm run typecheck` in the frontend job, but the script
   didn't exist in `frontend/package.json` — the step was silently a no-op.
 - The closing CTA section originally used a near-black inverted background,
