@@ -4,6 +4,7 @@ import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
 import { AjoClient, CircleStatus, formatXlm, xlmToStroops } from "@ajo/sdk";
 import { loadConfig, saveConfig, configPath } from "./config";
 import { parseCycleSecs, parseMembers } from "./validate";
+import { reportError } from "./errors";
 
 const STATUS_NAMES: Record<CircleStatus, string> = {
   [CircleStatus.Forming]: "Forming",
@@ -217,6 +218,8 @@ program
 program.showHelpAfterError("(run `ajo --help` or `ajo <command> --help` for usage)");
 
 program.parseAsync(process.argv).catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
-  process.exit(1);
+  const { message, hint, exitCode } = reportError(err);
+  console.error(message);
+  if (hint) console.error(`hint: ${hint}`);
+  process.exit(exitCode);
 });
