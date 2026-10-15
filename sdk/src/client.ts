@@ -27,7 +27,6 @@ export interface Circle {
   creator: string;
   token: string;
   contributionAmount: bigint;
-  securityDeposit?: bigint;
   maxMembers: number;
   cycleLengthSecs: bigint;
   /** Join order doubles as payout order — members[0] is paid first. */
@@ -47,7 +46,6 @@ interface RawCircle {
   creator: string;
   token: string;
   contribution_amount: bigint;
-  security_deposit?: bigint;
   max_members: number;
   cycle_length_secs: bigint;
   members: string[];
@@ -62,7 +60,6 @@ function parseCircle(raw: RawCircle): Circle {
     creator: raw.creator,
     token: raw.token,
     contributionAmount: raw.contribution_amount,
-    securityDeposit: raw.security_deposit ?? 0n,
     maxMembers: raw.max_members,
     cycleLengthSecs: raw.cycle_length_secs,
     members: raw.members,
