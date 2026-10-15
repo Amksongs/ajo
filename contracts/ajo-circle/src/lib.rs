@@ -12,8 +12,11 @@
 //! member's contribution for the cycle, or the cycle deadline passing (so
 //! one non-payer can't freeze the group's funds forever).
 
-use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, Vec,
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, token, Address, Env, Vec};
+
+mod events;
+pub use events::{
+    CircleCancelled, CircleCreated, CircleJoined, CircleLeft, ContributionPaid, PayoutSent,
 };
 
 /// Upper bound on `cycle_length_secs` (366 days). Keeps
@@ -120,8 +123,7 @@ impl AjoCircleContract {
             .persistent()
             .set(&DataKey::Circle(id), &circle);
 
-        env.events()
-            .publish((symbol_short!("circle"), symbol_short!("created")), id);
+        CircleCreated { circle_id: id }.publish(&env);
 
         Ok(id)
     }
@@ -154,10 +156,7 @@ impl AjoCircleContract {
             .persistent()
             .set(&DataKey::Circle(circle_id), &circle);
 
-        env.events().publish(
-            (symbol_short!("circle"), symbol_short!("joined")),
-            circle_id,
-        );
+        CircleJoined { circle_id }.publish(&env);
 
         Ok(())
     }
@@ -180,8 +179,7 @@ impl AjoCircleContract {
             .persistent()
             .set(&DataKey::Circle(circle_id), &circle);
 
-        env.events()
-            .publish((symbol_short!("circle"), symbol_short!("left")), circle_id);
+        CircleLeft { circle_id }.publish(&env);
 
         Ok(())
     }
@@ -212,10 +210,7 @@ impl AjoCircleContract {
             .persistent()
             .set(&DataKey::Circle(circle_id), &circle);
 
-        env.events().publish(
-            (symbol_short!("circle"), symbol_short!("cancel")),
-            circle_id,
-        );
+        CircleCancelled { circle_id }.publish(&env);
 
         Ok(())
     }
@@ -245,10 +240,7 @@ impl AjoCircleContract {
 
         env.storage().persistent().set(&key, &true);
 
-        env.events().publish(
-            (symbol_short!("circle"), symbol_short!("paid")),
-            (circle_id, member),
-        );
+        ContributionPaid { circle_id, member }.publish(&env);
 
         Ok(())
     }
@@ -307,10 +299,11 @@ impl AjoCircleContract {
             .persistent()
             .set(&DataKey::Circle(circle_id), &circle);
 
-        env.events().publish(
-            (symbol_short!("circle"), symbol_short!("payout")),
-            (circle_id, recipient.clone()),
-        );
+        PayoutSent {
+            circle_id,
+            recipient: recipient.clone(),
+        }
+        .publish(&env);
 
         Ok(recipient)
     }
