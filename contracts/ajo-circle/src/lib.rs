@@ -71,6 +71,7 @@ pub enum ContractError {
     CycleNotReady = 8,
     InvalidParams = 9,
     NotAuthorized = 10,
+    Overflow = 11,
 }
 
 #[contract]
@@ -93,6 +94,8 @@ impl AjoCircleContract {
             || max_members < 2
             || cycle_length_secs == 0
             || cycle_length_secs > MAX_CYCLE_LENGTH_SECS
+            // The full pot (every member paying) must fit in an i128 (#243).
+            || contribution_amount.checked_mul(max_members as i128).is_none()
         {
             return Err(ContractError::InvalidParams);
         }
@@ -273,7 +276,9 @@ impl AjoCircleContract {
             let key = DataKey::Contribution(circle_id, circle.current_cycle, m.clone());
             if env.storage().persistent().has(&key) {
                 paid_count += 1;
-                pot += circle.contribution_amount;
+                pot = pot
+                    .checked_add(circle.contribution_amount)
+                    .ok_or(ContractError::Overflow)?;
             } else if now >= deadline {
                 let miss_key = DataKey::MissedCount(circle_id, m.clone());
                 let missed: u32 = env.storage().persistent().get(&miss_key).unwrap_or(0);
