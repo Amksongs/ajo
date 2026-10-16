@@ -1,5 +1,13 @@
 // Circle cache.
-const STORAGE_KEY = "ajo_known_circle_ids";
+import { cacheScope } from "./network-config";
+
+/** Pre-#303 unscoped key; its ids may belong to another contract/network. */
+export const LEGACY_STORAGE_KEY = "ajo_known_circle_ids";
+
+/** Ids are scoped to the current network + contract (#303). */
+export function knownCircleIdsKey(scope: string = cacheScope()): string {
+  return `${LEGACY_STORAGE_KEY}:${scope}`;
+}
 
 /**
  * discoverCircleIds() only scans ~7 days of ledger events, so a circle
@@ -14,14 +22,14 @@ export function rememberCircleId(id: bigint): void {
   if (typeof window === "undefined") return;
   const known = readKnownIds();
   known.add(id.toString());
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...known]));
+  window.localStorage.setItem(knownCircleIdsKey(), JSON.stringify([...known]));
 }
 
 export function rememberCircleIds(ids: bigint[]): void {
   if (typeof window === "undefined") return;
   const known = readKnownIds();
   for (const id of ids) known.add(id.toString());
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...known]));
+  window.localStorage.setItem(knownCircleIdsKey(), JSON.stringify([...known]));
 }
 
 export function getKnownCircleIds(): bigint[] {
@@ -31,7 +39,10 @@ export function getKnownCircleIds(): bigint[] {
 function readKnownIds(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    // Drop the unscoped pre-#303 entry rather than reusing ids that may point
+    // at a different contract's circles.
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const raw = window.localStorage.getItem(knownCircleIdsKey());
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : []);
   } catch {

@@ -1,4 +1,5 @@
 // RPC call memoization cache for reducing redundant contract queries (#119)
+import { cacheScope } from "./network-config";
 
 interface CacheEntry<T> {
   value: T;
@@ -19,19 +20,21 @@ class RPCCache {
   }
 
   /**
-   * Generate a cache key for hasContributed calls.
-   * Format: "contrib:{circleId}:{cycle}:{member}"
+   * Generate a cache key for hasContributed calls, scoped to the current
+   * network + contract (#303).
+   * Format: "{scope}:contrib:{circleId}:{cycle}:{member}"
    */
-  contributionKey(circleId: bigint, cycle: number, member: string): string {
-    return `contrib:${circleId}:${cycle}:${member}`;
+  contributionKey(circleId: bigint, cycle: number, member: string, scope: string = cacheScope()): string {
+    return `${scope}:contrib:${circleId}:${cycle}:${member}`;
   }
 
   /**
-   * Generate a cache key for missedCount calls.
-   * Format: "missed:{circleId}:{member}"
+   * Generate a cache key for missedCount calls, scoped to the current
+   * network + contract (#303).
+   * Format: "{scope}:missed:{circleId}:{member}"
    */
-  missedKey(circleId: bigint, member: string): string {
-    return `missed:${circleId}:${member}`;
+  missedKey(circleId: bigint, member: string, scope: string = cacheScope()): string {
+    return `${scope}:missed:${circleId}:${member}`;
   }
 
   /**
