@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { getTotalCircles } from "@/lib/contract";
+import { networkDisplayName, networkShortLabel } from "@/lib/network-config";
 
 export function Hero() {
   const [totalCircles, setTotalCircles] = useState<bigint | null>(null);
@@ -23,8 +24,8 @@ export function Hero() {
             <span className="h-1.5 w-1.5 rounded-full bg-accent-green" />
             <span className="eyebrow !text-foreground">
               {totalCircles !== null
-                ? `${totalCircles.toString()} circles created on testnet`
-                : "Live on Stellar testnet"}
+                ? `${totalCircles.toString()} circles created on ${networkShortLabel()}`
+                : `Live on ${networkDisplayName()}`}
             </span>
           </span>
 
