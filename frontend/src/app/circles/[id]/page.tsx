@@ -26,7 +26,7 @@ import {
   missedCount,
   submitSignedTx,
 } from "@/lib/contract";
-import { assetLabel, formatCycleLength, formatDeadline, formatXlm, shortenAddress } from "@/lib/format";
+import { assetLabel, formatCount, formatCycleLength, formatDeadline, formatXlm, shortenAddress } from "@/lib/format";
 import { rememberCircleId } from "@/lib/circle-cache";
 import { parseCircleId } from "@/lib/circle-id";
 import { ContractErrorCode } from "@/lib/contract-errors";
@@ -310,13 +310,13 @@ function CircleDetail({
           <div>
             <p className="text-xs text-muted">Members</p>
             <p className="mt-1 font-medium">
-              {circle.members.length}/{circle.maxMembers}
+              {formatCount(circle.members.length)}/{formatCount(circle.maxMembers)}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted">Cycle</p>
             <p className="mt-1 font-medium">
-              {circle.status === CircleStatus.Completed ? "Done" : `${circle.currentCycle + 1} of ${circle.maxMembers}`}
+              {circle.status === CircleStatus.Completed ? "Done" : `${formatCount(circle.currentCycle + 1)} of ${formatCount(circle.maxMembers)}`}
             </p>
           </div>
           <div>
@@ -412,7 +412,7 @@ function CircleDetail({
             className="flex items-center justify-between gap-3 border-t border-border px-6 py-3 text-xs text-muted"
           >
             <span>
-              {memberPageView.offset + 1}–{memberPageView.offset + memberPageView.items.length} of {members.length}
+              {formatCount(memberPageView.offset + 1)}–{formatCount(memberPageView.offset + memberPageView.items.length)} of {formatCount(members.length)}
             </span>
             <div className="flex items-center gap-2">
               <Button
