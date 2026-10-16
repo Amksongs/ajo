@@ -25,6 +25,7 @@ import {
   assetLabel,
   clampDecimals,
   formatCycleLength,
+  formatCount,
   formatXlm,
   isValidAmount,
   shortenAddress,
@@ -163,7 +164,7 @@ export default function CirclesPage() {
               <h1 className="font-display mt-2 text-3xl italic tracking-tight">Start or join a circle</h1>
             </div>
             {totalCircles !== null && (
-              <Badge tone="gold">{totalCircles.toString()} circles created on testnet</Badge>
+              <Badge tone="gold">{formatCount(totalCircles)} circles created on testnet</Badge>
             )}
           </div>
           <p className="mt-2 max-w-lg text-sm text-muted">
@@ -308,7 +309,7 @@ export default function CirclesPage() {
                         <p className="text-xs text-muted">{formatCycleLength(circle.cycleLengthSecs)}</p>
                         <div className="mt-4 flex items-center justify-between text-xs text-muted">
                           <span>
-                            {circle.members.length}/{circle.maxMembers} members
+                            {formatCount(circle.members.length)}/{formatCount(circle.maxMembers)} members
                           </span>
                           <span>by {shortenAddress(circle.creator)}</span>
                         </div>

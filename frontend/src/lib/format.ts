@@ -8,12 +8,29 @@ const STROOPS_PER_XLM = 10_000_000n;
  */
 export const ASSET_DECIMALS = 7;
 
+// Fixed locale so server- and client-rendered output match (no hydration
+// mismatch) and amounts read the same for every visitor.
+const GROUPED = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+/** Whole-number count with thousands separators, e.g. 12345 -> "12,345" (#308). */
+export function formatCount(value: bigint | number): string {
+  return GROUPED.format(value);
+}
+
+/**
+ * Display-only amount with thousands separators in the whole part, e.g.
+ * 10_000_000_000_000n -> "1,000,000" (#139, #308). Don't feed the result back
+ * into xlmToStroops; it's for rendering, not parsing.
+ */
 export function formatXlm(stroops: bigint): string {
-  const whole = stroops / STROOPS_PER_XLM;
-  const frac = stroops % STROOPS_PER_XLM;
-  if (frac === 0n) return whole.toString();
+  const negative = stroops < 0n;
+  const abs = negative ? -stroops : stroops;
+  const whole = GROUPED.format(abs / STROOPS_PER_XLM);
+  const frac = abs % STROOPS_PER_XLM;
+  const sign = negative ? "-" : "";
+  if (frac === 0n) return `${sign}${whole}`;
   const fracStr = frac.toString().padStart(7, "0").replace(/0+$/, "");
-  return `${whole}.${fracStr}`;
+  return `${sign}${whole}.${fracStr}`;
 }
 
 export function xlmToStroops(xlm: string): bigint {
