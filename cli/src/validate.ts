@@ -1,4 +1,5 @@
 // CLI flag validation helpers.
+import { MAX_CYCLE_LENGTH_SECS } from "@ajo/sdk";
 
 /**
  * Parse `--cycle-secs` into a BigInt. `BigInt()` on arbitrary input throws a
@@ -13,6 +14,13 @@ export function parseCycleSecs(value: string): bigint {
   const secs = BigInt(trimmed);
   if (secs === 0n) {
     throw new Error("--cycle-secs must be greater than 0.");
+  }
+  // The contract rejects longer cycles with a generic InvalidParams at
+  // simulation time; catch it here with a specific message (#292).
+  if (secs > MAX_CYCLE_LENGTH_SECS) {
+    throw new Error(
+      `--cycle-secs must be at most ${MAX_CYCLE_LENGTH_SECS} (366 days, the contract's limit; got ${secs}).`,
+    );
   }
   return secs;
 }
