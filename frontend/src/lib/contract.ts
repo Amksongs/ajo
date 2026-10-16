@@ -14,11 +14,9 @@ import {
   xdr,
 } from "@stellar/stellar-sdk";
 import { ContractErrorCode, describeContractError, parseContractErrorCode } from "./contract-errors";
+import { CONTRACT_ID, NETWORK_PASSPHRASE } from "./network-config";
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL ?? "https://soroban-testnet.stellar.org";
-const NETWORK_PASSPHRASE =
-  process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE ?? "Test SDF Network ; September 2015";
-const CONTRACT_ID = process.env.NEXT_PUBLIC_AJO_CONTRACT_ID ?? "";
 export const NATIVE_TOKEN_ID = process.env.NEXT_PUBLIC_NATIVE_TOKEN_ID ?? "";
 
 export const server = new rpc.Server(RPC_URL);
