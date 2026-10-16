@@ -34,6 +34,7 @@ import {
 import { getKnownCircleIds, rememberCircleIds } from "@/lib/circle-cache";
 import { WalletError } from "@/lib/wallet";
 import { ContractCallError } from "@/lib/contract";
+import { networkDisplayName, networkShortLabel } from "@/lib/network-config";
 
 const CYCLE_OPTIONS = [
   { label: "Daily", secs: 86_400 },
@@ -164,11 +165,14 @@ export default function CirclesPage() {
               <h1 className="font-display mt-2 text-3xl italic tracking-tight">Start or join a circle</h1>
             </div>
             {totalCircles !== null && (
-              <Badge tone="gold">{formatCount(totalCircles)} circles created on testnet</Badge>
+              <Badge tone="gold">
+                {formatCount(totalCircles)} circles created on {networkShortLabel()}
+              </Badge>
             )}
           </div>
           <p className="mt-2 max-w-lg text-sm text-muted">
-            Circles run on Stellar testnet, in native XLM or any Stellar Asset Contract token. Connect a wallet when
+            {/* #328: network name comes from NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE. */}
+            Circles run on {networkDisplayName()}, in native XLM or any Stellar Asset Contract token. Connect a wallet when
             you&apos;re ready to create, join, or contribute.
           </p>
 
