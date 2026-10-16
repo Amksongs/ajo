@@ -15,9 +15,13 @@ npm link   # optional: makes `ajo` available globally
 ## Usage
 
 ```bash
-ajo login <secret-key>      # stored in ~/.ajo/config.json, mode 0600 — same
+ajo login                   # prompts for the secret key without echoing it;
+                             # stored in ~/.ajo/config.json, mode 0600 — same
                              # plaintext-on-disk model as the stellar CLI's
                              # own key store
+pass show stellar/ajo | ajo login --stdin   # or pipe it in from a secret store
+# `ajo login <secret-key>` still works but is deprecated: the key ends up in
+# shell history and is visible to other local users via `ps` (#287).
 ajo whoami
 ajo logout
 
