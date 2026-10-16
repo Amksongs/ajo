@@ -3,6 +3,7 @@ export {
   AjoClient,
   AjoContractError,
   CircleStatus,
+  MAX_CYCLE_LENGTH_SECS,
   decodeReturnValue,
   minLedgerFromRangeError,
   sendWithRetry,

@@ -27,6 +27,13 @@ const DISCOVERY_PAGE_SIZE = 100;
 /** Upper bound on pages walked per discovery scan, so a busy window can't loop forever. */
 const DISCOVERY_MAX_PAGES = 50;
 
+/**
+ * Mirrors `MAX_CYCLE_LENGTH_SECS` in `contracts/ajo-circle/src/lib.rs`
+ * (366 days). `create_circle` rejects a longer `cycle_length_secs` with
+ * `InvalidParams`, so clients should validate against this before simulating.
+ */
+export const MAX_CYCLE_LENGTH_SECS = 366n * 24n * 60n * 60n;
+
 export interface Circle {
   id: bigint;
   creator: string;

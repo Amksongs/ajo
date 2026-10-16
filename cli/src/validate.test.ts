@@ -1,5 +1,6 @@
 // --cycle-secs validation tests.
 import { describe, expect, it } from "vitest";
+import { MAX_CYCLE_LENGTH_SECS } from "@ajo/sdk";
 import { parseCycleSecs, parseMembers } from "./validate";
 
 describe("parseCycleSecs", () => {
@@ -16,6 +17,12 @@ describe("parseCycleSecs", () => {
 
   it("rejects zero", () => {
     expect(() => parseCycleSecs("0")).toThrow("--cycle-secs must be greater than 0.");
+  });
+
+  it("accepts the contract's maximum and rejects anything longer (#292)", () => {
+    expect(parseCycleSecs(MAX_CYCLE_LENGTH_SECS.toString())).toBe(31_622_400n);
+    expect(() => parseCycleSecs("31622401")).toThrow(/--cycle-secs must be at most 31622400 \(366 days/);
+    expect(() => parseCycleSecs("40000000")).toThrow(/at most 31622400/);
   });
 });
 
