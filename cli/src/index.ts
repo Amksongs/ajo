@@ -5,6 +5,7 @@ import { AjoClient, CircleStatus, formatXlm, xlmToStroops } from "@ajo/sdk";
 import { loadConfig, saveConfig, configPath } from "./config";
 import { parseCycleSecs, parseMembers } from "./validate";
 import { reportError } from "./errors";
+import { chooseSecretSource, promptHidden, readSecretFromStream } from "./secretInput";
 
 const STATUS_NAMES: Record<CircleStatus, string> = {
   [CircleStatus.Forming]: "Forming",
@@ -25,7 +26,7 @@ function client(): AjoClient {
 function requireSecretKey(): { secretKey: string; publicKey: string } {
   const config = loadConfig();
   if (!config.secretKey) {
-    console.error("Not logged in. Run `ajo login <secret-key>` first.");
+    console.error("Not logged in. Run `ajo login` first.");
     process.exit(1);
   }
   const kp = Keypair.fromSecret(config.secretKey);
@@ -47,9 +48,36 @@ const ID_ARG_HELP = "circle id (see `ajo circles list`)";
 program.name("ajo").description("Command-line client for Ajo rotating savings circles").version("0.1.0");
 
 program
-  .command("login <secret-key>")
-  .description("Store a Stellar secret key locally for signing (kept in ~/.ajo/config.json, mode 0600)")
-  .action((secretKey: string) => {
+  .command("login [secret-key]")
+  .description(
+    "Store a Stellar secret key locally for signing (kept in ~/.ajo/config.json, mode 0600). " +
+      "Prompts for the key without echoing it; use --stdin to pipe it in.",
+  )
+  .option("--stdin", "read the secret key from standard input instead of prompting")
+  .action(async (positional: string | undefined, opts: { stdin?: boolean }) => {
+    // #287: a key on the command line leaks to shell history and `ps`.
+    const source = chooseSecretSource({
+      positional,
+      stdinFlag: opts.stdin,
+      stdinIsTTY: Boolean(process.stdin.isTTY),
+    });
+    let secretKey: string;
+    if (source === "argument") {
+      console.error(
+        "Warning: passing the secret key as an argument is deprecated — it is saved in your shell history " +
+          "and visible to other users via `ps`. Run `ajo login` to be prompted, or `ajo login --stdin`.",
+      );
+      secretKey = positional as string;
+    } else if (source === "stdin") {
+      secretKey = await readSecretFromStream(process.stdin);
+    } else {
+      secretKey = await promptHidden("Secret key (S…, input hidden): ");
+    }
+    if (!secretKey) {
+      console.error("No secret key provided.");
+      process.exit(1);
+    }
+
     const kp = Keypair.fromSecret(secretKey); // throws on an invalid key
     const config = loadConfig();
     saveConfig({ ...config, secretKey });
