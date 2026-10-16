@@ -33,6 +33,7 @@ import { ContractErrorCode } from "@/lib/contract-errors";
 import { WalletError } from "@/lib/wallet";
 import { hasContributedCached, missedCountCached, invalidateCircleCache } from "@/lib/rpc-cache";
 import { paginate } from "@/lib/paginate";
+import { canCancelCircle } from "@/lib/circle-actions";
 
 const STATUS_TONE = {
   [CircleStatus.Forming]: "gold" as const,
@@ -340,7 +341,8 @@ function CircleDetail({
               {busy === "leave" ? "Leaving…" : "Leave circle"}
             </Button>
           )}
-          {circle.status === CircleStatus.Forming && isCreator && (
+          {/* #323: the contract also requires the creator to still be a member. */}
+          {canCancelCircle({ status: circle.status, isCreator, isMember }) && (
             <Button variant="danger" onClick={onCancel} disabled={busy !== null}>
               {busy === "cancel" ? "Cancelling…" : "Cancel circle"}
             </Button>
