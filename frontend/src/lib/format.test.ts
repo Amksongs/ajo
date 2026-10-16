@@ -5,11 +5,30 @@ import {
   clampDecimals,
   formatCycleLength,
   formatDeadline,
+  formatCount,
   formatXlm,
   isValidAmount,
   shortenAddress,
   xlmToStroops,
 } from "./format";
+
+describe("thousands separators (#308)", () => {
+  it("groups the whole part of large amounts", () => {
+    expect(formatXlm(10_000_000_000_000n)).toBe("1,000,000");
+    expect(formatXlm(12_345_678_900_000n)).toBe("1,234,567.89");
+    expect(formatXlm(-10_000_000_000n)).toBe("-1,000");
+  });
+
+  it("leaves small amounts unchanged", () => {
+    expect(formatXlm(9_990_000_000n)).toBe("999");
+  });
+
+  it("groups counts", () => {
+    expect(formatCount(1234n)).toBe("1,234");
+    expect(formatCount(4_294_967_295)).toBe("4,294,967,295");
+    expect(formatCount(7)).toBe("7");
+  });
+});
 
 describe("formatXlm", () => {
   it("formats a whole number of stroops with no decimal point", () => {
