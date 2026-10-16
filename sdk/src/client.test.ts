@@ -223,3 +223,10 @@ describe("discoverCircleIds (#264)", () => {
     expect(getEvents.mock.calls[1][0]).not.toHaveProperty("startLedger");
   });
 });
+
+describe("MAX_CYCLE_LENGTH_SECS (#292)", () => {
+  it("matches the contract's 366-day bound", async () => {
+    const { MAX_CYCLE_LENGTH_SECS } = await import("./client");
+    expect(MAX_CYCLE_LENGTH_SECS).toBe(31_622_400n);
+  });
+});
