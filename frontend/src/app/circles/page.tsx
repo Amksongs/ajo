@@ -19,6 +19,7 @@ import {
   getTotalCircles,
   submitSignedTx,
 } from "@/lib/contract";
+import { loadCircleList } from "@/lib/circle-list";
 import {
   ASSET_DECIMALS,
   assetLabel,
@@ -76,26 +77,18 @@ export default function CirclesPage() {
   }, []);
 
   const refresh = useCallback(async () => {
-    try {
-      const [discovered, total] = await Promise.all([discoverCircleIds(), getTotalCircles()]);
-      rememberCircleIds(discovered);
-
-      const idSet = new Map<string, bigint>();
-      for (const id of [...discovered, ...getKnownCircleIds()]) idSet.set(id.toString(), id);
-
-      // Cached ids can predate a contract redeploy and no longer resolve —
-      // load with allSettled so one stale id can't blank out the whole list.
-      const results = await Promise.allSettled([...idSet.values()].map((id) => getCircle(id)));
-      const loaded = results
-        .filter((r): r is PromiseFulfilledResult<Circle> => r.status === "fulfilled")
-        .map((r) => r.value)
-        .sort((a, b) => (a.id < b.id ? 1 : -1));
-
-      setCircles(loaded);
-      setTotalCircles(total);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Could not load circles.");
-    }
+    // allSettled throughout: a failing total_circles read (or discovery)
+    // must not throw away everything else that did load (#301).
+    const result = await loadCircleList({
+      discoverCircleIds,
+      getTotalCircles,
+      getKnownCircleIds,
+      getCircle,
+    });
+    rememberCircleIds(result.discovered);
+    setCircles(result.circles);
+    setTotalCircles(result.totalCircles);
+    setLoadError(result.error);
   }, []);
 
   useEffect(() => {
