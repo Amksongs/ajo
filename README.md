@@ -16,9 +16,10 @@ recourse — which is why these circles rarely extend past people who already
 know and trust each other.
 
 Ajo keeps the mechanic and removes that single point of failure. A Soroban
-smart contract custodies the pot instead of a person, enforces the
-contribution schedule, and pays out automatically — trustless by
-construction, not by promise.
+smart contract custodies the pot instead of a person, records the
+contribution schedule and payout rules, and exposes a permissionless
+`disburse` call that any participant or keeper bot can trigger when a cycle
+is due — trustless by construction, not by promise.
 
 - **Network:** Stellar / Soroban, testnet
 
@@ -32,10 +33,11 @@ construction, not by promise.
 2. **Contribute every cycle.** Once full, every member pays their fixed
    contribution into the contract each cycle. Wallets sign directly — Ajo
    never takes custody of a private key.
-3. **The contract pays out automatically.** As soon as every member has
-   contributed (or the cycle deadline passes, so one non-payer can't freeze
-   everyone else's money), the contract releases the full pot to that
-   cycle's member. No organizer collects or distributes anything by hand.
+3. **A member or keeper triggers the payout.** Once every member has
+   contributed or the cycle deadline passes, anyone can call `disburse` to
+   release the current pot to that cycle's member. In practice this is often
+   triggered by a member or a keeper bot; there is no privileged keeper in
+   the contract itself.
 
 ## Why this belongs on Stellar
 
@@ -116,10 +118,9 @@ before creating or joining a circle.
 | `disburse` | Pays out the current cycle's recipient once everyone's paid, or the deadline passes. Callable by anyone — no privileged keeper. |
 | `get_circle` / `has_contributed` / `missed_count` / `total_circles` | Read-only state, including a per-member missed-contribution strike count. |
 
-Unit tests cover the full rotation (every member paid exactly once,
-circle completion, including a 10-member circle), the missed-deadline path
-(partial payout, strikes accumulating across repeated misses), leave/cancel,
-and every rejected-input case. See `contracts/ajo-circle/src/test.rs`.
+The contract test suite covers the full rotation, the missed-deadline path,
+leave/cancel behavior, and rejected-input cases. See
+`contracts/ajo-circle/src/test.rs`.
 
 ## SDK
 
