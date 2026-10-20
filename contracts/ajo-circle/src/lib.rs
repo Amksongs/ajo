@@ -192,7 +192,10 @@ impl AjoCircleContract {
     /// The creator must also still be a member (#103): a creator who has
     /// `leave_circle`d their own circle gives up the right to cancel it, so a
     /// non-participant can't unilaterally shut down a circle made up entirely
-    /// of other people. Nothing is lost by this — a `Forming` circle holds no
+    /// of other people. If the circle becomes empty while still `Forming`, it
+    /// stays open for new members to join; only the creator while still a member
+    /// can cancel it, and if the creator already left there is no remaining
+    /// cancel authority. Nothing is lost by this — a `Forming` circle holds no
     /// funds, and each remaining member can still `leave_circle` on their own.
     pub fn cancel_circle(env: Env, circle_id: u64, caller: Address) -> Result<(), ContractError> {
         caller.require_auth();

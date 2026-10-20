@@ -664,6 +664,34 @@ fn full_rotation_scales_past_a_handful_of_members() {
 }
 
 #[test]
+fn an_empty_forming_circle_can_be_rejoined_and_only_creator_still_member_can_cancel() {
+    let env = Env::default();
+    let client = setup(&env);
+    let (token, _, _) = create_token(&env);
+    let creator = Address::generate(&env);
+    let member = Address::generate(&env);
+    let outsider = Address::generate(&env);
+
+    let id = client.create_circle(&creator, &token, &1_000, &3, &WEEK);
+    client.join_circle(&id, &member);
+    client.leave_circle(&id, &member);
+    client.leave_circle(&id, &creator);
+
+    let circle = client.get_circle(&id);
+    assert_eq!(circle.status, CircleStatus::Forming);
+    assert!(circle.members.is_empty());
+
+    client.join_circle(&id, &outsider);
+    assert_eq!(client.get_circle(&id).members.len(), 1);
+    assert_eq!(client.get_circle(&id).members.get(0).unwrap(), outsider);
+
+    assert_eq!(
+        client.try_cancel_circle(&id, &outsider),
+        Err(Ok(ContractError::NotAuthorized))
+    );
+}
+
+#[test]
 fn creator_who_left_cannot_cancel_the_circle() {
     // #103: leaving gives up the creator's cancel right.
     let env = Env::default();
