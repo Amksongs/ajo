@@ -16,6 +16,7 @@ export enum ContractErrorCode {
   CycleNotReady = 8,
   InvalidParams = 9,
   NotAuthorized = 10,
+  Overflow = 11,
 }
 
 /** Human-readable explanation for each contract error code. */
@@ -30,6 +31,7 @@ export const CONTRACT_ERROR_MESSAGES: Record<ContractErrorCode, string> = {
   [ContractErrorCode.CycleNotReady]: "This cycle isn't ready for payout yet.",
   [ContractErrorCode.InvalidParams]: "Invalid circle parameters.",
   [ContractErrorCode.NotAuthorized]: "You're not authorized to do that.",
+  [ContractErrorCode.Overflow]: "The circle's pot overflowed.",
 };
 
 const CONTRACT_ERROR_PATTERN = /Error\(Contract,\s*#(\d+)\)/;
