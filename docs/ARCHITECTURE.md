@@ -53,9 +53,15 @@ contribution.
 Instead, `disburse` succeeds once *either* every member has paid, *or* the
 cycle deadline has passed — paying out whatever was actually collected.
 A non-payer is recorded with a strike (`missed_count`) rather than being
-able to hold the group's money hostage. This trades a small amount of
-payout-amount unpredictability for the much stronger guarantee that funds
-can never get permanently stuck.
+able to hold the group's money hostage. This substantially reduces the
+failure mode where one member can freeze everyone else's contributions, but
+it is not a guarantee that funds can never get permanently stuck.
+
+Known gaps remain: a `pot +=` overflow can panic during `disburse`, `Circle`
+entries can archive without TTL management, a non-token `token` address can
+still create an unusable state, and there is no cancel path for an Active
+circle. Those issues are tracked separately, and this guarantee should be
+requalified until they are fixed.
 
 ## Native XLM by default
 
