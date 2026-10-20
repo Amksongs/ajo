@@ -26,6 +26,25 @@ fn create_token<'a>(env: &Env) -> (Address, token::Client<'a>, StellarAssetClien
 
 const WEEK: u64 = 604_800;
 
+/// Two-member active circle where `a` has paid this cycle's contribution and
+/// `b` has not. Returns the cycle-one deadline (`started_at + WEEK`).
+fn active_circle_with_a_missing_contribution<'a>(
+    env: &'a Env,
+) -> (AjoCircleContractClient<'a>, u64, Address, Address, u64) {
+    let client = setup(env);
+    let (token, _, asset) = create_token(env);
+    let a = Address::generate(env);
+    let b = Address::generate(env);
+    asset.mint(&a, &10_000);
+
+    let id = client.create_circle(&a, &token, &1_000, &2, &WEEK);
+    client.join_circle(&id, &b);
+    let started_at = client.get_circle(&id).started_at;
+    client.contribute(&id, &a);
+
+    (client, id, a, b, started_at + WEEK)
+}
+
 #[test]
 fn creates_a_circle_with_the_creator_as_first_member() {
     let env = Env::default();
@@ -341,12 +360,70 @@ fn a_missed_deadline_still_pays_out_the_partial_pot_and_records_a_strike() {
 }
 
 #[test]
+fn disburse_is_not_ready_just_before_the_cycle_deadline() {
+    let env = Env::default();
+    let (client, id, _, b, deadline) = active_circle_with_a_missing_contribution(&env);
+
+    env.ledger().with_mut(|l| l.timestamp = deadline - 1);
+
+    assert_eq!(
+        client.try_disburse(&id),
+        Err(Ok(ContractError::CycleNotReady))
+    );
+    assert_eq!(client.missed_count(&id, &b), 0);
+}
+
+#[test]
+fn disburse_pays_out_at_the_cycle_deadline_and_records_a_strike() {
+    let env = Env::default();
+    let (client, id, a, b, deadline) = active_circle_with_a_missing_contribution(&env);
+
+    // The deadline itself is inclusive: payout is allowed and the
+    // non-contributor is struck.
+    env.ledger().with_mut(|l| l.timestamp = deadline);
+
+    assert_eq!(client.disburse(&id), a);
+    assert_eq!(client.missed_count(&id, &b), 1);
+}
+
+#[test]
+fn disburse_pays_out_after_the_cycle_deadline_and_records_a_strike() {
+    let env = Env::default();
+    let (client, id, a, b, deadline) = active_circle_with_a_missing_contribution(&env);
+
+    env.ledger().with_mut(|l| l.timestamp = deadline + 1);
+
+    assert_eq!(client.disburse(&id), a);
+    assert_eq!(client.missed_count(&id, &b), 1);
+}
+
+#[test]
 fn disburse_on_an_unknown_circle_fails() {
     let env = Env::default();
     let client = setup(&env);
 
     assert_eq!(
         client.try_disburse(&99),
+        Err(Ok(ContractError::CircleNotFound))
+    );
+}
+
+#[test]
+fn mutations_on_an_unknown_circle_fail_with_circle_not_found() {
+    let env = Env::default();
+    let client = setup(&env);
+    let caller = Address::generate(&env);
+
+    assert_eq!(
+        client.try_contribute(&99, &caller),
+        Err(Ok(ContractError::CircleNotFound))
+    );
+    assert_eq!(
+        client.try_leave_circle(&99, &caller),
+        Err(Ok(ContractError::CircleNotFound))
+    );
+    assert_eq!(
+        client.try_cancel_circle(&99, &caller),
         Err(Ok(ContractError::CircleNotFound))
     );
 }

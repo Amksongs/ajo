@@ -68,6 +68,11 @@ jobs:
 
       - run: npm ci
 
+      # Fail the build on high/critical advisories in production (and optional)
+      # dependencies. Dev-only tooling is excluded to keep this focused on the
+      # code that actually ships to users.
+      - run: npm audit --omit=dev --audit-level=high
+
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
