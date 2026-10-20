@@ -26,6 +26,7 @@ export function Navbar() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const accountMenuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -44,6 +45,49 @@ export function Navbar() {
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
+  }, [accountMenuOpen]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const container = accountMenuRef.current;
+    if (!container) return;
+
+    const items = Array.from(container.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+    items[0]?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setAccountMenuOpen(false);
+        accountMenuButtonRef.current?.focus();
+        return;
+      }
+      if (items.length === 0) return;
+      if (event.key === "Tab") {
+        // Let focus move on, but don't leave an invisible menu behind it.
+        setAccountMenuOpen(false);
+        return;
+      }
+      if (
+        event.key !== "ArrowDown" &&
+        event.key !== "ArrowUp" &&
+        event.key !== "Home" &&
+        event.key !== "End"
+      ) {
+        return;
+      }
+      event.preventDefault();
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      let next = 0;
+      if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = items.length - 1;
+      else if (event.key === "ArrowDown") next = current < 0 ? 0 : (current + 1) % items.length;
+      else next = current <= 0 ? items.length - 1 : current - 1;
+      items[next]?.focus();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [accountMenuOpen]);
 
   useEffect(() => {
@@ -112,8 +156,18 @@ export function Navbar() {
           {address ? (
             <div ref={accountMenuRef} className="relative">
               <button
+                ref={accountMenuButtonRef}
+                id="account-menu-button"
                 onClick={() => setAccountMenuOpen((open) => !open)}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setAccountMenuOpen(true);
+                  }
+                }}
+                aria-haspopup="menu"
                 aria-expanded={accountMenuOpen}
+                aria-controls={accountMenuOpen ? "account-menu" : undefined}
                 className="flex items-center gap-2 rounded-full bg-background px-3.5 py-2 text-sm text-foreground transition-colors hover:opacity-80"
               >
                 <span className="h-2 w-2 rounded-full bg-accent-green" />
@@ -123,13 +177,20 @@ export function Navbar() {
 
               {accountMenuOpen && (
                 <motion.div
+                  id="account-menu"
+                  role="menu"
+                  aria-labelledby="account-menu-button"
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.15 }}
                   className="card absolute right-0 mt-2 w-52 overflow-hidden py-1"
                 >
-                  <p className="truncate border-b border-border px-3.5 py-2.5 text-xs text-muted">{address}</p>
+                  <p role="presentation" className="truncate border-b border-border px-3.5 py-2.5 text-xs text-muted">
+                    {address}
+                  </p>
                   <button
+                    role="menuitem"
+                    tabIndex={-1}
                     onClick={() => {
                       disconnectWallet();
                       toast.success("Wallet disconnected");

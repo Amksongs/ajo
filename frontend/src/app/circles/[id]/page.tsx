@@ -301,7 +301,9 @@ function CircleDetail({
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <CopyButton value={window.location.href} label="Copy invite link" />
+          {/* Invite links point at the join page, not back at this page —
+              /circles/join is where a new member can actually join (#177). */}
+          <CopyButton value={inviteLink(circle.id)} label="Copy invite link" />
           <Badge tone={STATUS_TONE[circle.status]}>{STATUS_LABEL[circle.status]}</Badge>
         </div>
       </div>
@@ -442,6 +444,12 @@ function CircleDetail({
       </Card>
     </div>
   );
+}
+
+/** Absolute invite URL for a circle; relative while server-rendering. */
+function inviteLink(id: bigint): string {
+  const path = `/circles/join?id=${id}`;
+  return typeof window === "undefined" ? path : new URL(path, window.location.origin).toString();
 }
 
 function errorMessage(err: unknown, fallback: string): string {
