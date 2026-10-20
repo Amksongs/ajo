@@ -46,7 +46,25 @@ versioned releases yet — everything below is unreleased, testnet-only work.
   `sdk/src/client.ts`) polled `getTransaction` in an unbounded loop — a
   dropped transaction that never lands on-chain hung the caller forever.
   Capped at ~60s with a real error on timeout.
+- Circle invite links now point at `/circles/join?id=<id>` and land on a join
+  CTA instead of silently redirecting to the detail page, so the link that
+  the app copies is the one the app actually handles (#177).
+- Navbar account dropdown now supports Escape (returning focus to its
+  trigger), arrow-key navigation, and `menu`/`menuitem` roles (#114).
+- CI jobs now set `timeout-minutes`, so a hung install or build can't hold a
+  runner for the default six hours (#170).
+- `frontend/.env.example` now documents each variable (including where the
+  contract and token ids come from), and the changelog points redeploys at
+  `docs/DEPLOYMENT.md`.
+- The frontend, SDK, and CLI error maps were missing `ContractError::Overflow`
+  (added to the contract in #243), so `Error(Contract, #11)` was surfaced as a
+  raw RPC string instead of a readable message. Restored the mapping in all
+  three copies, which is what `contract-errors.test.ts` / `errors.test.ts`
+  assert against.
 
 ### Deployed
 - `ajo-circle` contract to Stellar testnet. Redeployed once, after adding
-  `total_circles` — see `frontend/.env.example` for which env var to set.
+  `total_circles` — redeploying always produces a new contract id, so
+  `NEXT_PUBLIC_AJO_CONTRACT_ID` must be updated and the frontend rebuilt and
+  redeployed. See `docs/DEPLOYMENT.md` (and `frontend/.env.example` for the
+  variables).

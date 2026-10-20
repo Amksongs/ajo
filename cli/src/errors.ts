@@ -20,6 +20,7 @@ export const CONTRACT_ERROR_HINTS: Record<ContractErrorCode, string> = {
   [ContractErrorCode.CycleNotReady]: "Wait for the cycle deadline, or for every member to contribute, then retry.",
   [ContractErrorCode.InvalidParams]: "Check the amount, member count and --cycle-secs (see `ajo circles create --help`).",
   [ContractErrorCode.NotAuthorized]: "Only the circle's creator can do that.",
+  [ContractErrorCode.Overflow]: "A running total overflowed the contract's accounting — retry with smaller amounts.",
 };
 
 export interface CliErrorReport {
