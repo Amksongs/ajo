@@ -1,2 +1,5 @@
 # Gitignore.
 .DS_Store
+frontend/bun.lock
+frontend/tsconfig.custom.json
+frontend/tsconfig.custom.tsbuildinfo

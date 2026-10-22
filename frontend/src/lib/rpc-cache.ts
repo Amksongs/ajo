@@ -12,11 +12,52 @@ interface CacheEntry<T> {
  */
 class RPCCache {
   private cache = new Map<string, CacheEntry<unknown>>();
-  private readonly defaultTTL: number;
+  defaultTTL: number;
 
   constructor(defaultTTLMs = 30000) {
     // 30s default TTL
     this.defaultTTL = defaultTTLMs;
+  }
+
+  /**
+   * Wrapper for hasContributed with caching.
+   * Use this instead of calling hasContributed directly for automatic memoization.
+   */
+  async hasContributedCached(
+    hasContributedFn: (circleId: bigint, cycle: number, member: string) => Promise<boolean>,
+    circleId: bigint,
+    cycle: number,
+    member: string,
+  ): Promise<boolean> {
+    const key = this.contributionKey(circleId, cycle, member);
+    const cached = this.get<boolean>(key);
+    if (cached !== null) {
+      return cached;
+    }
+
+    const result = await hasContributedFn(circleId, cycle, member);
+    this.set(key, result);
+    return result;
+  }
+
+  /**
+   * Wrapper for missedCount with caching.
+   * Use this instead of calling missedCount directly for automatic memoization.
+   */
+  async missedCountCached(
+    missedCountFn: (circleId: bigint, member: string) => Promise<number>,
+    circleId: bigint,
+    member: string,
+  ): Promise<number> {
+    const key = this.missedKey(circleId, member);
+    const cached = this.get<number>(key);
+    if (cached !== null) {
+      return cached;
+    }
+
+    const result = await missedCountFn(circleId, member);
+    this.set(key, result);
+    return result;
   }
 
   /**
@@ -38,6 +79,23 @@ class RPCCache {
   }
 
   /**
+   * Clear all entries for a specific circle by matching the circle id
+   * field precisely (not substrings of other numeric fields).
+   */
+  clearCircle(circleId: bigint): void {
+    const toDelete: string[] = [];
+    const circleStr = circleId.toString();
+    for (const key of this.cache.keys()) {
+      // Match ":{circleId}:" as a complete field, not just any occurrence
+      // Key format: {scope}:contrib:{circleId}:{cycle}:{member} or {scope}:missed:{circleId}:{member}
+      if (key.includes(`:contrib:${circleStr}:`) || key.includes(`:missed:${circleStr}:`)) {
+        toDelete.push(key);
+      }
+    }
+    toDelete.forEach((k) => this.cache.delete(k));
+  }
+
+  /**
    * Get cached value if exists and not expired.
    */
   get<T>(key: string): T | null {
@@ -45,7 +103,7 @@ class RPCCache {
     if (!entry) return null;
 
     const now = Date.now();
-    if (now - entry.timestamp > this.defaultTTL) {
+    if (now - entry.timestamp >= this.defaultTTL) {
       this.cache.delete(key);
       return null;
     }
@@ -97,51 +155,14 @@ class RPCCache {
 // Singleton instance
 export const rpcCache = new RPCCache(30000); // 30 second TTL
 
-/**
- * Wrapper for hasContributed with caching.
- * Use this instead of calling hasContributed directly for automatic memoization.
- */
-export async function hasContributedCached(
-  hasContributedFn: (circleId: bigint, cycle: number, member: string) => Promise<boolean>,
-  circleId: bigint,
-  cycle: number,
-  member: string,
-): Promise<boolean> {
-  const key = rpcCache.contributionKey(circleId, cycle, member);
-  const cached = rpcCache.get<boolean>(key);
-  if (cached !== null) {
-    return cached;
-  }
-
-  const result = await hasContributedFn(circleId, cycle, member);
-  rpcCache.set(key, result);
-  return result;
-}
-
-/**
- * Wrapper for missedCount with caching.
- * Use this instead of calling missedCount directly for automatic memoization.
- */
-export async function missedCountCached(
-  missedCountFn: (circleId: bigint, member: string) => Promise<number>,
-  circleId: bigint,
-  member: string,
-): Promise<number> {
-  const key = rpcCache.missedKey(circleId, member);
-  const cached = rpcCache.get<number>(key);
-  if (cached !== null) {
-    return cached;
-  }
-
-  const result = await missedCountFn(circleId, member);
-  rpcCache.set(key, result);
-  return result;
-}
+// Backward-compatible named exports
+export const hasContributedCached = rpcCache.hasContributedCached.bind(rpcCache);
+export const missedCountCached = rpcCache.missedCountCached.bind(rpcCache);
 
 /**
  * Invalidate cache for a specific circle.
  * Call this after mutations (join/contribute/disburse/leave/cancel) to ensure fresh data.
  */
 export function invalidateCircleCache(circleId: bigint): void {
-  rpcCache.clearPattern(`:${circleId}:`);
+  rpcCache.clearCircle(circleId);
 }
